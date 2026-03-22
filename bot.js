@@ -1,4 +1,4 @@
-// tg-bot/bot.js
+// bot.js
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 
