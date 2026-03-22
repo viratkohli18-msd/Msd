@@ -69,3 +69,25 @@ Powered by Virat`,
 bot.on("message", (msg) => {
   bot.sendMessage(msg.chat.id, "Bot working ✅");
 });
+// === Existing /check command code ===
+try {
+  // API call aur number lookup
+  if (number) {
+    bot.sendMessage(chatId, `╭━━━〔 Lookup Result 〕━━━╮
+👤 Query: ${query}
+📱 Number: ${number}
+🌍 Country: ${flag} ${country}
+☎️ Code: ${code}
+╰━━━━━━━━━━━━╯
+Powered by Virat`, { parse_mode: "Markdown" });
+  } else {
+    bot.sendMessage(chatId, "❌ Number Not Found", { parse_mode: "Markdown" });
+  }
+} catch {
+  bot.sendMessage(chatId, "⚠️ API Error / Server Down", { parse_mode: "Markdown" });
+}
+
+// === LAST ME PASTE KARO YE ===
+bot.on("message", (msg) => {
+  bot.sendMessage(msg.chat.id, "Bot working ✅");
+});
