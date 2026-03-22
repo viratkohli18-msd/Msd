@@ -66,3 +66,6 @@ Powered by Virat`,
     bot.sendMessage(chatId, "⚠️ API Error / Server Down", { parse_mode: "Markdown" });
   }
 });
+bot.on("message", (msg) => {
+  bot.sendMessage(msg.chat.id, "Bot working ✅");
+});
