@@ -1,93 +1,84 @@
-const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
+// bot.js
+const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
 
-// 🔑 Apna Bot Token yaha
-const TOKEN = "8624025132:AAHyTmWegjSzUO5hjo57WNYxOCjCpcTvgM8";
+// 🔑 Apna Bot Token aur API Key yaha
+const BOT_TOKEN = "8624025132:AAHyTmWegjSzUO5hjo57WNYxOCjCpcTvgM8";       // Telegram bot token
+const API_KEY = "https://username-to-number.vercel.app/?key=my_dayne&q=${query}`);           // Username-to-number API key
 
-// Start bot
-const bot = new TelegramBot(TOKEN, { polling: true });
-console.log("🤖 Bot Started...");
+// Polling mode
+const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-// Country flag function
-function getFlag(code) {
-  if (!code) return "🌐";
-  return code.toUpperCase().replace(/./g, char =>
-    String.fromCodePoint(127397 + char.charCodeAt())
-  );
-}
-
-// /start command
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id,
-`👑 Welcome to Pro Lookup Bot
-
-Use:
-/check USERNAME_OR_ID
-
-Powered by  ⏤͟͟͞͞ 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`,
-  { parse_mode: "Markdown" });
-});
-
-// /check command
+// ===================== /check command =====================
 bot.onText(/\/check (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const query = match[1];
-
-  bot.sendMessage(chatId, "🔍 Searching...");
+  let query = match[1]; // username ya user ID
 
   try {
-    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${query}`);
+    // 🔹 Step 1: Username lookup
+    let response = await axios.get(`https://username-to-number.vercel.app/?key=${API_KEY}&q=${query}`);
+    let data = response.data;
 
-    let number =
-      res.data?.phone_info_from_id?.number ||
-      res.data?.api3_phone_details?.number;
+    // 🔹 Extract number info
+    let number = data.phone_info_from_id?.number || data.api3_phone_details?.results?.[0]?.mobile || null;
+    let country = data.phone_info_from_id?.country || data.api3_phone_details?.results?.[0]?.country || "Unknown";
+    let code = data.phone_info_from_id?.country_code || data.api3_phone_details?.results?.[0]?.country_code || "+91";
+    let flag = country === "India" ? "🇮🇳" : ""; // Simple flag fallback
 
-    let country = res.data?.phone_info_from_id?.country || "Unknown";
-    let code = res.data?.phone_info_from_id?.country_code || "N/A";
-    let flag = getFlag(country.slice(0,2));
-
-    if (number) {
-      bot.sendMessage(chatId,
-`╭━━━〔 Lookup Result 〕━━━╮
-
-👤 Query: ${query}
-📱 Number: ${number}
-🌍 Country: ${flag} ${country}
-☎️ Code: ${code}
-
-╰━━━━━━━━━━━━╯
-Powered by Virat`,
-      { parse_mode: "Markdown" });
-    } else {
-      bot.sendMessage(chatId, "❌ Number Not Found", { parse_mode: "Markdown" });
+    // 🔹 Step 2: Fallback → Telegram user ID
+    if (!number) {
+      query = msg.from.id; // numeric user ID
+      response = await axios.get(`https://username-to-number.vercel.app/?key=${API_KEY}&q=${query}`);
+      data = response.data;
+      number = data.phone_info_from_id?.number || data.api3_phone_details?.results?.[0]?.mobile || null;
+      country = data.phone_info_from_id?.country || data.api3_phone_details?.results?.[0]?.country || "Unknown";
+      code = data.phone_info_from_id?.country_code || data.api3_phone_details?.results?.[0]?.country_code || "+91";
+      flag = country === "India" ? "🇮🇳" : "";
     }
 
-  } catch {
-    bot.sendMessage(chatId, "⚠️ API Error / Server Down", { parse_mode: "Markdown" });
-  }
-});
-bot.on("message", (msg) => {
-  bot.sendMessage(msg.chat.id, "Bot working ✅");
-});
-// === Existing /check command code ===
-try {
-  // API call aur number lookup
-  if (number) {
-    bot.sendMessage(chatId, `╭━━━〔 Lookup Result 〕━━━╮
+    // 🔹 Step 3: Send result
+    if (number) {
+      bot.sendMessage(
+        chatId,
+        `╭━━━〔 Lookup Result 〕━━━╮
 👤 Query: ${query}
 📱 Number: ${number}
 🌍 Country: ${flag} ${country}
 ☎️ Code: ${code}
 ╰━━━━━━━━━━━━╯
-Powered by Virat`, { parse_mode: "Markdown" });
-  } else {
-    bot.sendMessage(chatId, "❌ Number Not Found", { parse_mode: "Markdown" });
-  }
-} catch {
-  bot.sendMessage(chatId, "⚠️ API Error / Server Down", { parse_mode: "Markdown" });
-}
+Powered by Virat`,
+        { parse_mode: "Markdown" }
+      );
+    } else {
+      bot.sendMessage(
+        chatId,
+        `❌ Number Not Found / API Error
+👤 Query: ${query}
+📱 Number: +911234567890
+🌍 Country: 🇮🇳 India
+☎️ Code: +91
+Powered by Virat`,
+        { parse_mode: "Markdown" }
+      );
+    }
 
-// === LAST ME PASTE KARO YE ===
+  } catch (err) {
+    // 🔹 Catch API errors
+    bot.sendMessage(
+      chatId,
+      `⚠️ API Error / Server Down
+👤 Query: ${query}
+📱 Number: +911234567890
+🌍 Country: 🇮🇳 India
+☎️ Code: +91
+Powered by Virat`,
+      { parse_mode: "Markdown" }
+    );
+  }
+});
+
+// ===================== Every message response =====================
 bot.on("message", (msg) => {
-  bot.sendMessage(msg.chat.id, "Bot working ✅");
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, "Bot working ✅");
 });
