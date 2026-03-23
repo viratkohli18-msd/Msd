@@ -84,7 +84,7 @@ bot.onText(/\/check (.+)/, async (msg, match) => {
 🌍 Country: ${result.flag} ${result.country}
 ☎️ Code: ${result.code}
 ╰━━━━━━━━━━━━╯
-Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`,
+Powered by  𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`,
       { parse_mode: "Markdown" }
     );
   } else {
