@@ -91,6 +91,17 @@ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 
     bot.sendMessage(chatId, "❌ Number Not Found", { parse_mode: "Markdown" });
   }
 });
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Bot is running ✅");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("🌐 Server running on port " + PORT);
+});
 
 // 🟢 Bot alive reply
 bot.on("message", (msg) => {
