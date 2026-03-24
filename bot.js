@@ -9,8 +9,7 @@ const API = {
   KEY: "my_dayne",
   BASE: "https://username-to-number.vercel.app/"
 };
-const CREDIT = "⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪 @mrkaran078";   // 👈 YAHI ADD KAR
-
+const CREDIT = "⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪";
 const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", { polling: true });
 
 // ===== COUNTRY FLAG =====
