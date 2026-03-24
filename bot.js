@@ -9,6 +9,7 @@ const API = {
   KEY: "my_dayne",
   BASE: "https://username-to-number.vercel.app/"
 };
+const CREDIT = "⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪 ( @mrkaran078)";   // 👈 YAHI ADD KAR
 
 const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", { polling: true });
 
@@ -73,6 +74,7 @@ bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
 
   // ===== UI =====
   bot.sendMessage(chatId,
+bot.sendMessage(chatId,
 `╭━━━ 💀 RESULT ━━━╮
 🔍 Query: ${input}
 
@@ -80,8 +82,8 @@ bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
 🌍 Country: ${country || "Unknown"}
 📞 Code: ${code || "N/A"} ${flag}
 
-╰━━━━━━━━━━━━━━╯`);
-});
+╰━━━━━━━━━━━━━━╯
+${CREDIT}`); 
 
 // ===== SERVER (RENDER KEEP ALIVE) =====
 app.get("/", (req, res) => res.send("Bot Running ✅"));
