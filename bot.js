@@ -1,16 +1,18 @@
-const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
-const express = require('express');
+const express = require("express");
+const axios = require("axios");
+const TelegramBot = require("node-telegram-bot-api");
 
-// --- Configuration ---
-const TOKEN = '8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU';
-const const API = {
+const app = express();
+
+// ✅ API YAHI DALNA HAI (TOP LEVEL)
+const API = {
   KEY: "my_dayne",
   BASE: "https://username-to-number.vercel.app/",
   AADHAAR: "https://number8899.vercel.app/"
 };
-const app = express();
-const bot = new TelegramBot(TOKEN, { polling: true });
+
+// ✅ BOT
+const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", { polling: true });
 
 // Keep-alive server for Render
 app.get('/', (req, res) => res.send('Bot is running! 🤖'));
