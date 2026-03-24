@@ -1,26 +1,60 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const express = require("express");
+const fs = require("fs");
 
 const bot = new TelegramBot("8624025132:AAEu2T9-bKw0N9OP9tA73J-ZomUcZIFANL8", { polling: true });
 
+// ===== ADMIN =====
+const ADMIN_ID = 8217006573; // 👈 apna telegram id daal
+
+// ===== USERS SAVE =====
+let users = [];
+try {
+  users = JSON.parse(fs.readFileSync("users.json"));
+} catch {
+  users = [];
+}
+
+function saveUsers() {
+  fs.writeFileSync("users.json", JSON.stringify(users));
+}
+
+// ===== FLAG FUNCTION =====
+function getFlag(code) {
+  const flags = {
+    "+91": "🇮🇳",
+    "+1": "🇺🇸",
+    "+44": "🇬🇧",
+    "+92": "🇵🇰",
+    "+880": "🇧🇩"
+  };
+  return flags[code] || "🌍";
+}
+
+// ===== TRACK USERS =====
+bot.on("message", (msg) => {
+  if (!users.includes(msg.chat.id)) {
+    users.push(msg.chat.id);
+    saveUsers();
+  }
+});
+
 // ===== START MENU =====
 bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
+  bot.sendMessage(msg.chat.id,
+`🔥 *PREMIUM LOOKUP BOT* 🔥
+Fast ⚡ Accurate 💀 Powerful
 
-  bot.sendMessage(chatId,
-`🔥 *WELCOME TO PREMIUM LOOKUP BOT* 🔥
-
-💀 Fast • Accurate • Powerful
-
-Choose an option below 👇`,
+Choose option 👇`,
 {
   parse_mode: "Markdown",
   reply_markup: {
     inline_keyboard: [
-      [{ text: "🔍 Username → Number", callback_data: "username" }],
-      [{ text: "🆔 UserID → Number", callback_data: "userid" }],
-      [{ text: "📱 Number → Info ℹ️", callback_data: "number" }],
+      [{ text: "🔍 Username → Number", callback_data: "user" }],
+      [{ text: "🆔 UserID → Number", callback_data: "id" }],
+      [{ text: "📱 Number → Info ℹ️", callback_data: "num" }],
+      [{ text: "🧾 Aadhar → Family", callback_data: "aadhaar" }],
       [{ text: "📖 How To Use", callback_data: "help" }]
     ]
   }
@@ -28,123 +62,154 @@ Choose an option below 👇`,
 });
 
 // ===== BUTTON HANDLER =====
-bot.on("callback_query", (query) => {
-  const chatId = query.message.chat.id;
+bot.on("callback_query", (q) => {
+  const id = q.message.chat.id;
 
-  if (query.data === "help") {
-    bot.sendMessage(chatId,
+  if (q.data === "help") {
+    bot.sendMessage(id,
 `📖 *HOW TO USE*
 
-1️⃣ Username → Number  
-👉 /user username
-
-2️⃣ UserID → Number  
-👉 /id 123456789
-
-3️⃣ Number → Info  
-👉 /num 9876543210
-
-⚡ Example:
-/user virat  
-/id 6719346651  
-/num 8968552874`,
+/user username  
+/id 123456789  
+/num 9876543210  
+/aadhaar 123456789012`,
 { parse_mode: "Markdown" });
   }
 
-  if (query.data === "username") {
-    bot.sendMessage(chatId, "Send like:\n/user username");
-  }
-
-  if (query.data === "userid") {
-    bot.sendMessage(chatId, "Send like:\n/id 123456789");
-  }
-
-  if (query.data === "number") {
-    bot.sendMessage(chatId, "Send like:\n/num 9876543210");
-  }
+  if (q.data === "user") bot.sendMessage(id, "👉 /user username");
+  if (q.data === "id") bot.sendMessage(id, "👉 /id 123456789");
+  if (q.data === "num") bot.sendMessage(id, "👉 /num 9876543210");
+  if (q.data === "aadhaar") bot.sendMessage(id, "👉 /aadhaar 123456789012");
 });
 
-// ===== USERNAME TO NUMBER =====
-bot.onText(/\/user (.+)/, async (msg, match) => {
+// ===== USERNAME =====
+bot.onText(/\/user (.+)/, async (msg, m) => {
   const chatId = msg.chat.id;
-  const username = match[1];
+  const username = m[1];
 
   try {
     const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${username}`);
-    const data = res.data;
+    const d = res.data;
 
-    if (data.number) {
+    if (d.number) {
+      const flag = getFlag(d.country_code);
+
       bot.sendMessage(chatId,
-`╭━━━〔 RESULT 〕━━━╮
+`╭━━━〔 USERNAME RESULT 〕━━━╮
 👤 Username: ${username}
-📱 Number: ${data.number}
-🌍 Country: ${data.country}
-☎️ Code: ${data.country_code}
+📱 Number: ${d.number}
+🌍 Country: ${flag} ${d.country}
+☎️ Code: ${d.country_code}
 ╰━━━━━━━━━━━━╯
-⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`,
-{ parse_mode: "Markdown" });
-    } else {
-      bot.sendMessage(chatId, "❌ Not Found");
-    }
-  } catch {
-    bot.sendMessage(chatId, "⚠️ API Error");
-  }
-});
-
-// ===== USERID TO NUMBER =====
-bot.onText(/\/id (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const id = match[1];
-
-  try {
-    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${id}`);
-    const num = res.data?.phone_info_from_id?.number;
-
-    if (num) {
-      bot.sendMessage(chatId,
-`╭━━━〔 USERID RESULT 〕━━━╮
-🆔 ID: ${id}
-📱 Number: ${num}
-╰━━━━━━━━━━━━╯`,
-{ parse_mode: "Markdown" });
-    } else {
-      bot.sendMessage(chatId, "❌ Not Found");
-    }
-  } catch {
-    bot.sendMessage(chatId, "⚠️ API Error");
-  }
-});
-
-// ===== NUMBER TO FULL INFO =====
-bot.onText(/\/num (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const number = match[1];
-
-  try {
-    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${number}`);
-    const info = res.data?.api3_phone_details?.result?.results?.[0];
-
-    if (info) {
-      bot.sendMessage(chatId,
-`🔥 *NUMBER DETAILS* 🔥
-
-📱 Number: ${info.mobile}
-👤 Name: ${info.name}
-👨 Father: ${info.fname}
-📍 Address: ${info.address}
-🌐 Circle: ${info.circle}
-
-💀 Premium Lookup`,
+💀 Premium`,
 { parse_mode: "Markdown" });
     } else {
       bot.sendMessage(chatId, "❌ No Data Found");
     }
+
   } catch {
     bot.sendMessage(chatId, "⚠️ API Error");
   }
 });
 
-// ===== EXPRESS SERVER =====
+// ===== USERID =====
+bot.onText(/\/id (.+)/, async (msg, m) => {
+  const chatId = msg.chat.id;
+  const uid = m[1];
+
+  try {
+    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${uid}`);
+    const d = res.data?.phone_info_from_id;
+
+    if (d && d.number) {
+      const flag = getFlag(d.country_code);
+
+      bot.sendMessage(chatId,
+`╭━━━〔 USER ID RESULT 〕━━━╮
+🆔 ID: ${uid}
+📱 Number: ${d.number}
+🌍 ${flag} ${d.country}
+☎️ ${d.country_code}
+╰━━━━━━━━━━━━╯`,
+{ parse_mode: "Markdown" });
+    } else {
+      bot.sendMessage(chatId, "❌ No Data Found");
+    }
+
+  } catch {
+    bot.sendMessage(chatId, "⚠️ API Error");
+  }
+});
+
+// ===== NUMBER INFO =====
+bot.onText(/\/num (.+)/, async (msg, m) => {
+  const chatId = msg.chat.id;
+  const number = m[1];
+
+  try {
+    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&num=${number}`);
+    const info = res.data?.result?.results?.[0];
+
+    if (info) {
+      bot.sendMessage(chatId,
+`╭━━━〔 💀 NUMBER DETAILS 〕━━━╮
+
+📱 ${info.mobile}
+👤 ${info.name}
+👨 ${info.fname}
+📍 ${info.address}
+🌐 ${info.circle}
+
+╰━━━━━━━━━━━━╯
+⚡ Ultra Premium`,
+{ parse_mode: "Markdown" });
+    } else {
+      bot.sendMessage(chatId, "❌ No Data Found");
+    }
+
+  } catch {
+    bot.sendMessage(chatId, "⚠️ API Error");
+  }
+});
+
+// ===== AADHAAR =====
+bot.onText(/\/aadhaar (.+)/, async (msg, m) => {
+  const chatId = msg.chat.id;
+  const aadhar = m[1];
+
+  try {
+    const res = await axios.get(`https://number8899.vercel.app/?type=family&aadhar=${aadhar}`);
+
+    bot.sendMessage(chatId,
+`🧾 *AADHAAR DATA*
+
+${JSON.stringify(res.data, null, 2)}
+
+💀 Premium`,
+{ parse_mode: "Markdown" });
+
+  } catch {
+    bot.sendMessage(chatId, "⚠️ API Error");
+  }
+});
+
+// ===== ADMIN =====
+bot.onText(/\/stats/, (msg) => {
+  if (msg.chat.id !== ADMIN_ID) return;
+  bot.sendMessage(msg.chat.id, `👥 Users: ${users.length}`);
+});
+
+bot.onText(/\/broadcast (.+)/, (msg, match) => {
+  if (msg.chat.id !== ADMIN_ID) return;
+
+  users.forEach(id => {
+    bot.sendMessage(id, `📢 ${match[1]}`);
+  });
+
+  bot.sendMessage(msg.chat.id, "✅ Broadcast Sent");
+});
+
+// ===== EXPRESS =====
 const app = express();
 app.get("/", (req, res) => res.send("Bot Running ✅"));
 
