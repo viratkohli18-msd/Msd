@@ -4,85 +4,87 @@ const TelegramBot = require("node-telegram-bot-api");
 
 const app = express();
 
-// ✅ API YAHI DALNA HAI (TOP LEVEL)
+// ===== CONFIG =====
 const API = {
   KEY: "my_dayne",
-  BASE: "https://username-to-number.vercel.app/",
-  AADHAAR: "https://number8899.vercel.app/"
+  BASE: "https://username-to-number.vercel.app/"
 };
 
-// ✅ BOT
 const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", { polling: true });
 
-// Keep-alive server for Render
-app.get('/', (req, res) => res.send('Bot is running! 🤖'));
-app.listen(process.env.PORT || 3000);
+// ===== COUNTRY FLAG =====
+function getFlag(code) {
+  if (!code) return "🌍";
+  return code.replace("+", "")
+    .split("")
+    .map(d => String.fromCodePoint(127397 + Number(d)))
+    .join("");
+}
 
-// --- Robust Data Parser ---
-function extractData(data) {
-    // 1. Try Username/ID Path
-    const fromId = data?.phone_info_from_id;
-    if (fromId?.success) {
-        return {
-            number: fromId.number,
-            country: fromId.country || 'Unknown',
-            source: 'ID Lookup'
-        };
-    }
-
-    // 2. Try Number-to-Info Path
-    const details = data?.phone_details?.result?.results?.[0];
-    if (details) {
-        return {
-            number: details.mobile,
-            name: details.name,
-            fname: details.fname,
-            address: details.address,
-            circle: details.circle,
-            source: 'Database'
-        };
-    }
-
-    // 3. Fallback: Regex Scan for 10-13 digit numbers
-    const rawString = JSON.stringify(data);
-    const phoneMatch = rawString.match(/\d{10,13}/);
-    if (phoneMatch) {
-        return { number: phoneMatch[0], status: 'Extracted via Scan' };
-    }
-
+// ===== FETCH =====
+async function fetchData(url) {
+  try {
+    const res = await axios.get(url, { timeout: 10000 });
+    return res.data;
+  } catch (e) {
     return null;
+  }
 }
 
-// --- UI Formatter ---
-function formatResponse(info) {
-    if (!info) return "❌ No data found for this query.";
-    
-    let message = "╔══════════════════╗\n";
-    message += "║   📱 DATA FOUND    \n";
-    message += "╠══════════════════╝\n";
-    
-    Object.entries(info).forEach(([key, val]) => {
-        message += `➤ ${key.toUpperCase()}: ${val}\n`;
-    });
-    
-    message += "╚══════════════════╝";
-    return `<code>${message}</code>`;
-}
-
-// --- Bot Commands ---
+// ===== START =====
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "Welcome! Use /user, /id, or /num to lookup info.");
+  bot.sendMessage(msg.chat.id,
+`💀 𝗣𝗥𝗘𝗠𝗜𝗨𝗠 𝗟𝗢𝗢𝗞𝗨𝗣 𝗕𝗢𝗧
+
+Commands:
+/user username
+/id userid
+
+⚡ Fast • Accurate • Clean UI`);
 });
 
-bot.onText(/\/(user|id|num) (.+)/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const query = match[2];
+// ===== USERNAME + ID SAME HANDLER =====
+bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  let input = match[2].trim();
 
-    try {
-        const response = await axios.get(`${API_BASE_URL}/search?q=${query}`, { timeout: 5000 });
-        const result = extractData(response.data);
-        bot.sendMessage(chatId, formatResponse(result), { parse_mode: 'HTML' });
-    } catch (error) {
-        bot.sendMessage(chatId, "⚠️ API Error or Timeout. Please try again later.");
-    }
+  // username fix
+  if (match[1] === "user" && !input.startsWith("@")) {
+    input = "@" + input;
+  }
+
+  const url = `${API.BASE}?key=${API.KEY}&q=${encodeURIComponent(input)}`;
+  const data = await fetchData(url);
+
+  if (!data) {
+    return bot.sendMessage(chatId, "⚠️ API Error, try again later");
+  }
+
+  // ===== MAIN PARSE =====
+  const phone = data?.phone_info_from_id?.number;
+  const country = data?.phone_info_from_id?.country;
+  const code = data?.phone_info_from_id?.country_code;
+
+  if (!phone) {
+    return bot.sendMessage(chatId, "❌ No Data Found");
+  }
+
+  const flag = getFlag(code);
+
+  // ===== UI =====
+  bot.sendMessage(chatId,
+`╭━━━ 💀 RESULT ━━━╮
+🔍 Query: ${input}
+
+📱 Number: ${phone}
+🌍 Country: ${country || "Unknown"}
+📞 Code: ${code || "N/A"} ${flag}
+
+╰━━━━━━━━━━━━━━╯`);
 });
+
+// ===== SERVER (RENDER KEEP ALIVE) =====
+app.get("/", (req, res) => res.send("Bot Running ✅"));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running"));
