@@ -9,7 +9,10 @@ const API = {
   KEY: "my_dayne",
   BASE: "https://username-to-number.vercel.app/"
 };
-const CREDIT = "⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪";
+
+const CREDIT = "⚡ 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪";
+
+// ===== BOT =====
 const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", { polling: true });
 
 // ===== COUNTRY FLAG =====
@@ -33,22 +36,23 @@ async function fetchData(url) {
 
 // ===== START =====
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id,
+  bot.sendMessage(msg.chat.id, 
 `💀 𝗣𝗥𝗘𝗠𝗜𝗨𝗠 𝗟𝗢𝗢𝗞𝗨𝗣 𝗕𝗢𝗧
 
-Commands:
+📌 Available Commands:
 /user username
 /id userid
 
-⚡ Fast • Accurate • Clean UI`);
+⚡ Fast • Accurate • Premium UI
+
+${CREDIT}`);
 });
 
-// ===== USERNAME + ID SAME HANDLER =====
+// ===== MAIN COMMAND =====
 bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   let input = match[2].trim();
 
-  // username fix
   if (match[1] === "user" && !input.startsWith("@")) {
     input = "@" + input;
   }
@@ -60,7 +64,6 @@ bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
     return bot.sendMessage(chatId, "⚠️ API Error, try again later");
   }
 
-  // ===== MAIN PARSE =====
   const phone = data?.phone_info_from_id?.number;
   const country = data?.phone_info_from_id?.country;
   const code = data?.phone_info_from_id?.country_code;
@@ -71,21 +74,21 @@ bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
 
   const flag = getFlag(code);
 
-  // ===== UI =====
-  bot.sendMessage(chatId,
-bot.sendMessage(chatId,
-`╭━━━ 💀 RESULT ━━━╮
+  // ===== PREMIUM UI =====
+  bot.sendMessage(chatId, 
+`╭━━━ 💀 𝗥𝗘𝗦𝗨𝗟𝗧 ━━━╮
 🔍 Query: ${input}
 
 📱 Number: ${phone}
-🌍 Country: ${country || "Unknown"}
-📞 Code: ${code || "N/A"} ${flag}
+🌍 Country: ${country || "Unknown"} ${flag}
+📞 Code: ${code || "N/A"}
 
 ╰━━━━━━━━━━━━━━╯
-${CREDIT}`); 
+${CREDIT}`);
+});
 
-// ===== SERVER (RENDER KEEP ALIVE) =====
+// ===== SERVER =====
 app.get("/", (req, res) => res.send("Bot Running ✅"));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running"));
+app.listen(PORT, () => console.log("🌐 Server running on port " + PORT));
