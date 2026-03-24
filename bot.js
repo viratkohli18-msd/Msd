@@ -6,21 +6,20 @@ const fs = require("fs");
 const bot = new TelegramBot("8624025132:AAEu2T9-bKw0N9OP9tA73J-ZomUcZIFANL8", { polling: true });
 
 // ===== ADMIN =====
-const ADMIN_ID = 8217006573; // 👈 apna telegram id daal
+const ADMIN_ID = 8217006573;
 
-// ===== USERS SAVE =====
+// ===== USER STORE =====
 let users = [];
 try {
   users = JSON.parse(fs.readFileSync("users.json"));
 } catch {
   users = [];
 }
-
 function saveUsers() {
   fs.writeFileSync("users.json", JSON.stringify(users));
 }
 
-// ===== FLAG FUNCTION =====
+// ===== FLAG =====
 function getFlag(code) {
   const flags = {
     "+91": "🇮🇳",
@@ -40,20 +39,19 @@ bot.on("message", (msg) => {
   }
 });
 
-// ===== START MENU =====
+// ===== START =====
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id,
 `🔥 *PREMIUM LOOKUP BOT* 🔥
-Fast ⚡ Accurate 💀 Powerful
 
-Choose option 👇`,
+Select option 👇`,
 {
   parse_mode: "Markdown",
   reply_markup: {
     inline_keyboard: [
       [{ text: "🔍 Username → Number", callback_data: "user" }],
       [{ text: "🆔 UserID → Number", callback_data: "id" }],
-      [{ text: "📱 Number → Info ℹ️", callback_data: "num" }],
+      [{ text: "📱 Number → Info", callback_data: "num" }],
       [{ text: "🧾 Aadhar → Family", callback_data: "aadhaar" }],
       [{ text: "📖 How To Use", callback_data: "help" }]
     ]
@@ -61,18 +59,18 @@ Choose option 👇`,
 });
 });
 
-// ===== BUTTON HANDLER =====
+// ===== BUTTON =====
 bot.on("callback_query", (q) => {
   const id = q.message.chat.id;
 
   if (q.data === "help") {
     bot.sendMessage(id,
-`📖 *HOW TO USE*
+`📖 Commands:
 
-/user username  
-/id 123456789  
-/num 9876543210  
-/aadhaar 123456789012`,
+/user username
+/id userid
+/num number
+/aadhaar number`,
 { parse_mode: "Markdown" });
   }
 
@@ -82,52 +80,24 @@ bot.on("callback_query", (q) => {
   if (q.data === "aadhaar") bot.sendMessage(id, "👉 /aadhaar 123456789012");
 });
 
-// ===== USERNAME =====
+// ===== USERNAME → NUMBER =====
 bot.onText(/\/user (.+)/, async (msg, m) => {
   const chatId = msg.chat.id;
-  const username = m[1];
+  let username = m[1].trim();
+
+  if (!username.startsWith("@")) username = "@" + username;
 
   try {
-    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${username}`);
+    const url = `https://username-to-number.vercel.app/?key=my_dayne&q=${encodeURIComponent(username)}`;
+    const res = await axios.get(url);
     const d = res.data;
-
-    if (d.number) {
-      const flag = getFlag(d.country_code);
-
-      bot.sendMessage(chatId,
-`╭━━━〔 USERNAME RESULT 〕━━━╮
-👤 Username: ${username}
-📱 Number: ${d.number}
-🌍 Country: ${flag} ${d.country}
-☎️ Code: ${d.country_code}
-╰━━━━━━━━━━━━╯
-💀 Premium`,
-{ parse_mode: "Markdown" });
-    } else {
-      bot.sendMessage(chatId, "❌ No Data Found");
-    }
-
-  } catch {
-    bot.sendMessage(chatId, "⚠️ API Error");
-  }
-});
-
-// ===== USERID =====
-bot.onText(/\/id (.+)/, async (msg, m) => {
-  const chatId = msg.chat.id;
-  const uid = m[1];
-
-  try {
-    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&q=${uid}`);
-    const d = res.data?.phone_info_from_id;
 
     if (d && d.number) {
       const flag = getFlag(d.country_code);
-
       bot.sendMessage(chatId,
-`╭━━━〔 USER ID RESULT 〕━━━╮
-🆔 ID: ${uid}
-📱 Number: ${d.number}
+`╭━━ USERNAME RESULT ━━╮
+👤 ${username}
+📱 ${d.number}
 🌍 ${flag} ${d.country}
 ☎️ ${d.country_code}
 ╰━━━━━━━━━━━━╯`,
@@ -136,38 +106,68 @@ bot.onText(/\/id (.+)/, async (msg, m) => {
       bot.sendMessage(chatId, "❌ No Data Found");
     }
 
-  } catch {
+  } catch (e) {
+    console.log(e.response?.data || e.message);
     bot.sendMessage(chatId, "⚠️ API Error");
   }
 });
 
-// ===== NUMBER INFO =====
-bot.onText(/\/num (.+)/, async (msg, m) => {
+// ===== USERID → NUMBER =====
+bot.onText(/\/id (.+)/, async (msg, m) => {
   const chatId = msg.chat.id;
-  const number = m[1];
+  const uid = m[1];
 
   try {
-    const res = await axios.get(`https://username-to-number.vercel.app/?key=my_dayne&num=${number}`);
-    const info = res.data?.result?.results?.[0];
+    const url = `https://username-to-number.vercel.app/?key=my_dayne&q=${uid}`;
+    const res = await axios.get(url);
+    const d = res.data?.phone_info_from_id;
 
-    if (info) {
+    if (d && d.number) {
+      const flag = getFlag(d.country_code);
       bot.sendMessage(chatId,
-`╭━━━〔 💀 NUMBER DETAILS 〕━━━╮
-
-📱 ${info.mobile}
-👤 ${info.name}
-👨 ${info.fname}
-📍 ${info.address}
-🌐 ${info.circle}
-
-╰━━━━━━━━━━━━╯
-⚡ Ultra Premium`,
+`╭━━ USERID RESULT ━━╮
+🆔 ${uid}
+📱 ${d.number}
+🌍 ${flag} ${d.country}
+☎️ ${d.country_code}
+╰━━━━━━━━━━━━╯`,
 { parse_mode: "Markdown" });
     } else {
       bot.sendMessage(chatId, "❌ No Data Found");
     }
 
-  } catch {
+  } catch (e) {
+    console.log(e.response?.data || e.message);
+    bot.sendMessage(chatId, "⚠️ API Error");
+  }
+});
+
+// ===== NUMBER → INFO =====
+bot.onText(/\/num (.+)/, async (msg, m) => {
+  const chatId = msg.chat.id;
+  const number = m[1];
+
+  try {
+    const url = `https://username-to-number.vercel.app/?key=my_dayne&num=${number}`;
+    const res = await axios.get(url);
+    const info = res.data?.result?.results?.[0];
+
+    if (info) {
+      bot.sendMessage(chatId,
+`╭━━ NUMBER DETAILS ━━╮
+📱 ${info.mobile || "N/A"}
+👤 ${info.name || "N/A"}
+👨 ${info.fname || "N/A"}
+📍 ${info.address || "N/A"}
+🌐 ${info.circle || "N/A"}
+╰━━━━━━━━━━━━╯`,
+{ parse_mode: "Markdown" });
+    } else {
+      bot.sendMessage(chatId, "❌ No Data Found");
+    }
+
+  } catch (e) {
+    console.log(e.response?.data || e.message);
     bot.sendMessage(chatId, "⚠️ API Error");
   }
 });
@@ -178,17 +178,17 @@ bot.onText(/\/aadhaar (.+)/, async (msg, m) => {
   const aadhar = m[1];
 
   try {
-    const res = await axios.get(`https://number8899.vercel.app/?type=family&aadhar=${aadhar}`);
+    const url = `https://number8899.vercel.app/?type=family&aadhar=${aadhar}`;
+    const res = await axios.get(url);
 
     bot.sendMessage(chatId,
-`🧾 *AADHAAR DATA*
+`🧾 AADHAAR DATA
 
-${JSON.stringify(res.data, null, 2)}
-
-💀 Premium`,
+${JSON.stringify(res.data, null, 2)}`,
 { parse_mode: "Markdown" });
 
-  } catch {
+  } catch (e) {
+    console.log(e.response?.data || e.message);
     bot.sendMessage(chatId, "⚠️ API Error");
   }
 });
@@ -206,7 +206,7 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
     bot.sendMessage(id, `📢 ${match[1]}`);
   });
 
-  bot.sendMessage(msg.chat.id, "✅ Broadcast Sent");
+  bot.sendMessage(msg.chat.id, "✅ Done");
 });
 
 // ===== EXPRESS =====
@@ -214,4 +214,4 @@ const app = express();
 app.get("/", (req, res) => res.send("Bot Running ✅"));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🌐 Server running " + PORT));
+app.listen(PORT, () => console.log("Server running"));
