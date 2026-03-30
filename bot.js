@@ -174,4 +174,9 @@ bot.onText(/\/key (.+)/, (msg, match) => {
   save();
 
   bot.sendMessage(msg.chat.id, `✅ Premium given to ${target}`);
-});
+  
+// ===== SERVER (RENDER KEEP ALIVE) =====
+app.get("/", (req, res) => res.send("Bot Running ✅"));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running"));
