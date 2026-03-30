@@ -2,8 +2,12 @@ const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const fetch = require("node-fetch");
 
-const TOKEN = "8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU";
-const bot = new TelegramBot(TOKEN, { polling: true });
+const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", {
+  polling: {
+    interval: 300,
+    autoStart: true
+  }
+});
 
 const CREDIT = "⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪";
 const ADMIN_ID = 8217006573; // 👈 apna telegram ID daal
