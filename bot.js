@@ -1,94 +1,173 @@
-const express = require("express");
-const axios = require("axios");
 const TelegramBot = require("node-telegram-bot-api");
+const fs = require("fs");
+const fetch = require("node-fetch");
 
-const app = express();
+const TOKEN = "8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU";
+const bot = new TelegramBot(TOKEN, { polling: true });
 
-// ===== CONFIG =====
-const API = {
-  KEY: "my_dayne",
-  BASE: "https://username-to-number.vercel.app/"
-};
+const CREDIT = "⚡ Powered by 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪";
+const ADMIN_ID = 8217006573; // 👈 apna telegram ID daal
 
-const CREDIT = "⚡ 𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪";
-
-// ===== BOT =====
-const bot = new TelegramBot("8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU", { polling: true });
-
-// ===== COUNTRY FLAG =====
-function getFlag(code) {
-  if (!code) return "🌍";
-  return code.replace("+", "")
-    .split("")
-    .map(d => String.fromCodePoint(127397 + Number(d)))
-    .join("");
+// ===== DATABASE =====
+let users = {};
+if (fs.existsSync("users.json")) {
+  users = JSON.parse(fs.readFileSync("users.json"));
 }
 
-// ===== FETCH =====
-async function fetchData(url) {
-  try {
-    const res = await axios.get(url, { timeout: 10000 });
-    return res.data;
-  } catch (e) {
-    return null;
+function save() {
+  fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
+}
+
+// ===== USER INIT =====
+function initUser(id) {
+  if (!users[id]) {
+    users[id] = {
+      uses: 0,
+      premium: false
+    };
   }
 }
 
-// ===== START =====
+// ===== LIMIT CHECK =====
+function checkLimit(id, chatId) {
+  initUser(id);
+
+  if (!users[id].premium && users[id].uses >= 7) {
+    bot.sendMessage(chatId,
+`🚫 Free Limit Finished!
+
+💎 Buy Premium:
+👉 @mrkaran078`);
+    return false;
+  }
+
+  users[id].uses += 1;
+  save();
+  return true;
+}
+
+// ===== START MENU =====
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, 
-`💀 𝗣𝗥𝗘𝗠𝗜𝗨𝗠 𝗟𝗢𝗢𝗞𝗨𝗣 𝗕𝗢𝗧
-
-📌 Available Commands:
-/user username
-/id userid
-
-⚡ Fast • Accurate • Premium UI
-
-${CREDIT}`);
-});
-
-// ===== MAIN COMMAND =====
-bot.onText(/\/(user|id) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  let input = match[2].trim();
 
-  if (match[1] === "user" && !input.startsWith("@")) {
-    input = "@" + input;
-  }
-
-  const url = `${API.BASE}?key=${API.KEY}&q=${encodeURIComponent(input)}`;
-  const data = await fetchData(url);
-
-  if (!data) {
-    return bot.sendMessage(chatId, "⚠️ API Error, try again later");
-  }
-
-  const phone = data?.phone_info_from_id?.number;
-  const country = data?.phone_info_from_id?.country;
-  const code = data?.phone_info_from_id?.country_code;
-
-  if (!phone) {
-    return bot.sendMessage(chatId, "❌ No Data Found");
-  }
-
-  const flag = getFlag(code);
-
-  // ===== PREMIUM UI =====
-  bot.sendMessage(chatId, 
-`╭━━━ 💀 𝗥𝗘𝗦𝗨𝗟𝗧 ━━━╮
-🔍 Query: ${input}
-
-📱 Number: ${phone}
-🌍 Country: ${country || "Unknown"} ${flag}
-📞 Code: ${code || "N/A"}
-
+  bot.sendMessage(chatId,
+`╭━━━ 💀 LOOKUP PRO ━━━╮
+⚡ Fast • Secure • Powerful
 ╰━━━━━━━━━━━━━━╯
+
+🎯 Send Number / ID / Username`,
+{
+  reply_markup: {
+    keyboard: [
+      ["🔍 Lookup ID", "📱 Number Info"],
+      ["💎 Buy Key", "❓ Help"]
+    ],
+    resize_keyboard: true
+  }
+});
+});
+
+// ===== BUTTON HANDLER =====
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const text = msg.text;
+  const userId = msg.from.id;
+
+  initUser(userId);
+
+  // ===== TRACKING =====
+  console.log(`User: ${userId} | Uses: ${users[userId].uses}`);
+
+  if (text === "💎 Buy Key") {
+    return bot.sendMessage(chatId,
+`💎 Premium Access
+
+🔓 Unlimited Uses
+⚡ Fast Results
+
+👉 Buy Here:
+@mrkaran078`);
+  }
+
+  if (text === "❓ Help") {
+    return bot.sendMessage(chatId,
+`📖 HOW TO USE:
+
+1. Send /id 123456789
+2. Send /num 9876543210
+
+🎁 Free: 7 uses
+💎 Premium: Unlimited`);
+  }
+
+  if (text === "🔍 Lookup ID") {
+    return bot.sendMessage(chatId, "👉 Send like:\n/id 123456789");
+  }
+
+  if (text === "📱 Number Info") {
+    return bot.sendMessage(chatId, "👉 Send like:\n/num 9876543210");
+  }
+});
+
+// ===== ID TO NUMBER =====
+bot.onText(/\/id (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  let input = match[1].trim().replace("@", "");
+
+  if (!checkLimit(userId, chatId)) return;
+
+  bot.sendMessage(chatId, "⏳ Fetching...");
+
+  try {
+    const url = `https://ayaanmods.site/tg2num.php?key=annonymoustgtonum&id=${input}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data || !data.number) {
+      return bot.sendMessage(chatId, "❌ No Data Found");
+    }
+
+    bot.sendMessage(chatId,
+`╭━━━ 💀 RESULT ━━━╮
+🆔 ID: ${input}
+📱 Number: ${data.number}
+╰━━━━━━━━━━━━━━╯
+
+${CREDIT}`);
+  } catch {
+    bot.sendMessage(chatId, "⚠️ API Error");
+  }
+});
+
+// ===== NUMBER INFO (DUMMY / ADD API) =====
+bot.onText(/\/num (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const number = match[1].trim();
+
+  if (!checkLimit(userId, chatId)) return;
+
+  bot.sendMessage(chatId,
+`╭━━━ 💀 NUMBER ━━━╮
+📱 Number: ${number}
+⚠️ API not added
+╰━━━━━━━━━━━━━━╯
+
 ${CREDIT}`);
 });
 
-// ===== SERVER =====
-app.get("/", (req, res) => res.send("Bot Running ✅"));
+// ===== ADMIN: GIVE PREMIUM =====
+bot.onText(/\/key (.+)/, (msg, match) => {
+  if (msg.from.id !== ADMIN_ID) {
+    return bot.sendMessage(msg.chat.id, "❌ Not Allowed");
+  }
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🌐 Server running on port " + PORT));
+  const target = match[1];
+
+  initUser(target);
+  users[target].premium = true;
+  save();
+
+  bot.sendMessage(msg.chat.id, `✅ Premium given to ${target}`);
+});
