@@ -1,9 +1,8 @@
-// ====================== RENDER + WEBHOOK SETUP (FINAL) ======================
+// ====================== FINAL WEBHOOK SETUP FOR RENDER (NO SYNTAX ERROR) ======================
 const express = require('express');
 const { Telegraf } = require('telegraf');
 
-// ←←← YAHAN APNA TOKEN DAAL (sirf ek baar)
-const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';   // ← yahan daal
+const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';   // ← sirf yahan token daal, kahin aur mat likhna
 const bot = new Telegraf(BOT_TOKEN);
 
 const app = express();
@@ -24,12 +23,12 @@ app.post('/webhook', (req, res) => {
         });
 });
 
-// ====================== TERA PURA FACILITIES / BOT LOGIC YAHAN RAKH ======================
-// Sab kuch jo tune pehle daala tha (commands, hears, on('message'), middlewares, database etc.)
+// ====================== TERA PURA FACILITIES / BOT LOGIC YAHAN RAKH (kuch mat hata) ======================
+// Sab tera old code yahan paste kar de (bot.start, bot.command, bot.on('message'), etc.)
 // Example:
-// bot.start((ctx) => ctx.reply('Bot live ho gaya bhai'));
-// bot.command('menu', (ctx) => { ... tera facilities menu ... });
-// bot.on('message', (ctx) => { ... tera saara logic ... });
+// bot.start((ctx) => ctx.reply('Bot live ho gaya madarchod'));
+// bot.hears('menu', (ctx) => { /* tera facilities menu */ });
+// ... jo bhi tune daala tha sab yahan
 
 // Server start
 const server = app.listen(PORT, '0.0.0.0', () => {
@@ -52,7 +51,7 @@ process.on('SIGTERM', () => {
         console.log('Server closed');
         process.exit(0);
     });
-});});
+});
 const ADMIN_ID = 8217006573; // tera user id (admin)
 const API_KEY = 'CYBER_TEST';
 
