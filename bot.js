@@ -149,18 +149,38 @@ bot.command('admin', async (ctx) => {
 bot.launch();
 console.log('Bot chal raha hai...');
 
-// Render ke liye webhook (port)
-const port = process.env.PORT || 3000;
+// === Render + Telegram Webhook ke liye Clean Setup ===
 const express = require('express');
 const app = express();
-app.get('/', (req, res) => res.send('Bot running'));
-app.listen(port, () => console.log(`Port ${port} pe live`));
 
-// bot.js ke end mein ye rakh (port fix)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Bot running on port ${PORT}`);
+const PORT = process.env.PORT || 10000;   // Render default 10000 hota hai, isliye better
+
+// Health check (Render ko pata chale ki app live hai)
+app.get('/', (req, res) => res.send('Bot is running ✅'));
+
+// Telegram webhook route (agar tera bot webhook use karta hai toh yahan handle kar)
+app.post('/webhook', (req, res) => {
+    // yahan tera bot.handleUpdate(req.body) ya jo bhi logic hai wo daal
+    bot.handleUpdate(req.body)
+        .then(() => res.sendStatus(200))
+        .catch(err => {
+            console.error(err);
+            res.sendStatus(500);
+        });
 });
 
-// webhook set karne ke liye (deploy ke baad)
-bot.telegram.setWebhook(`https://tera-render-url.onrender.com/webhook`);  // Render URL daal
+// Server start with proper binding
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Menu`);
+    console.log(`Bot chal raha hai...`);
+    console.log(`Port ${PORT} pe live`);
+});
+
+// Graceful shutdown (Render ke liye zaroori)
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
