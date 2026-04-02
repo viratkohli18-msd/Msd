@@ -17,7 +17,7 @@ app.post('/webhook', (req, res) => bot.handleUpdate(req.body).then(() => res.sen
 const users = new Map();
 
 function getUser(id) {
-  if (!users.has(id)) users.set(id, {usage:0, credits:0, premiumKey:null});
+  if (!users.has(id)) users.set(id, {usage: 0, credits: 0, premiumKey: null});
   return users.get(id);
 }
 
@@ -40,50 +40,50 @@ const mainKeyboard = Markup.keyboard([
   ['❓ Help']
 ]).resize(true).persistent(true);
 
-bot.start(ctx => {
-  getUser(ctx.from.id);
+bot.start(async (ctx) => {
+  const userId = ctx.from.id;
+  getUser(userId);
+
+  // Refer credit de
+  const refCode = ctx.message.text.split(' ')[1];
+  if (refCode && refCode.startsWith('PREM')) {
+    for (let [id, u] of users) {
+      if (u.premiumKey === refCode) {
+        u.credits += 1;
+        break;
+      }
+    }
+  }
+
   ctx.reply(`Welcome bhai 🔥\nFree 7 uses.\n\n𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`, mainKeyboard);
 });
 
-bot.hears('🔍 Lookup ID', ctx => {
-  if (!checkLimit(ctx, getUser(ctx.from.id))) return;
-  ctx.reply('Username (without @) ya User ID bhej:');
+const buttons = ['🔍 Lookup ID', '📱 Number Info', '🚘 Vehicle Info', '🪪 Aadhar Family', '🔑 Buy Premium Key', '👥 Refer & Earn', '❓ Help'];
+
+bot.hears(buttons, (ctx) => {
+  const user = getUser(ctx.from.id);
+  if (!checkLimit(ctx, user)) return;
+
+  const cmd = ctx.message.text;
+  if (cmd === '🔍 Lookup ID') return ctx.reply('Username (without @) ya User ID bhej:');
+  if (cmd === '📱 Number Info') return ctx.reply('10 digit number bhej:');
+  if (cmd === '🚘 Vehicle Info') return ctx.reply('Vehicle number bhej:');
+  if (cmd === '🪪 Aadhar Family') return ctx.reply('Aadhar 12 digit bhej:');
+  if (cmd === '🔑 Buy Premium Key') return ctx.reply(`Premium Key ke liye @mrkaran078 ko message kar.\nTera User ID: ${ctx.from.id}`);
+  if (cmd === '👥 Refer & Earn') {
+    let u = getUser(ctx.from.id);
+    if (!u.premiumKey) u.premiumKey = `PREM\( {ctx.from.id}X \){Date.now().toString().slice(-4)}`;
+    return ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
+  }
+  if (cmd === '❓ Help') return ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited');
 });
 
-bot.hears('📱 Number Info', ctx => {
-  if (!checkLimit(ctx, getUser(ctx.from.id))) return;
-  ctx.reply('10 digit number bhej:');
-});
-
-bot.hears('🚘 Vehicle Info', ctx => {
-  if (!checkLimit(ctx, getUser(ctx.from.id))) return;
-  ctx.reply('Vehicle number bhej:');
-});
-
-bot.hears('🪪 Aadhar Family', ctx => {
-  if (!checkLimit(ctx, getUser(ctx.from.id))) return;
-  ctx.reply('Aadhar 12 digit bhej:');
-});
-
-bot.hears('🔑 Buy Premium Key', ctx => {
-  ctx.reply(`Premium Key ke liye @mrkaran078 ko message kar.\nTera User ID: ${ctx.from.id}`);
-});
-
-bot.hears('👥 Refer & Earn', async ctx => {
-  let u = getUser(ctx.from.id);
-  if (!u.premiumKey) u.premiumKey = `PREM\( {ctx.from.id}X \){Date.now().toString().slice(-4)}`;
-  ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
-});
-
-bot.hears('❓ Help', ctx => ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited'));
-
-// Ye wala part sabse important hai
-bot.on('text', async ctx => {
+// Real data handler (button ke baad hi chalega)
+bot.on('text', async (ctx) => {
   const text = ctx.message.text.trim();
   const user = getUser(ctx.from.id);
 
-  // Button wale text ignore karo
-  if (['🔍 Lookup ID','📱 Number Info','🚘 Vehicle Info','🪪 Aadhar Family','🔑 Buy Premium Key','👥 Refer & Earn','❓ Help'].includes(text)) return;
+  if (buttons.includes(text)) return;   // button ignore
 
   if (!checkLimit(ctx, user)) return;
 
@@ -92,22 +92,19 @@ bot.on('text', async ctx => {
   else if (/^[A-Z]{2}\d{2}[A-Z0-9]{4,}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/rc2?key= \){API_KEY}&vehicle=${text}`;
   else if (/^\d{12}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/aadhar-family?key= \){API_KEY}&term=${text}`;
   else if (/^\d{10}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/num2info?key= \){API_KEY}&number=${text}`;
-  else {
-    ctx.reply('Button se choose kar aur sahi data bhej.', mainKeyboard);
-    return;
-  }
+  else return ctx.reply('Button se choose kar aur sahi data bhej.', mainKeyboard);
 
   try {
     const res = await fetch(url);
     const data = await res.text();
-    await ctx.reply(data);
-  } catch(e) {
-    await ctx.reply('API fail');
+    await ctx.reply(data || 'No data');
+  } catch (e) {
+    await ctx.reply('API fail ho gaya');
   }
   user.usage++;
 });
 
-bot.command('givekey', ctx => {
+bot.command('givekey', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   const args = ctx.message.text.split(' ');
   if (args[1] && args[2]) {
@@ -116,7 +113,7 @@ bot.command('givekey', ctx => {
   }
 });
 
-bot.command('admin', ctx => {
+bot.command('admin', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   let msg = 'Users:\n';
   for (let [id, u] of users) msg += `ID:\( {id} | Uses: \){u.usage} | Credits:\( {u.credits} | Key: \){u.premiumKey||'no'}\n`;
@@ -124,6 +121,6 @@ bot.command('admin', ctx => {
 });
 
 const webhookUrl = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-url.onrender.com'}/webhook`;
-bot.telegram.setWebhook(webhookUrl, {drop_pending_updates: true});
+bot.telegram.setWebhook(webhookUrl, { drop_pending_updates: true });
 
 app.listen(PORT, '0.0.0.0', () => console.log(`Live on ${PORT}`));
