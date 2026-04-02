@@ -1,16 +1,17 @@
-// === Render + Telegram Webhook ke liye FINAL CLEAN SETUP (2026) ===
+// ====================== RENDER + WEBHOOK SETUP (FINAL) ======================
 const express = require('express');
 const { Telegraf } = require('telegraf');
 
-// ←←← YAHAN APNA BOT TOKEN DAAL (naya revoke kiya ho toh naya daal)
-const bot = new Telegraf('8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk');
+// ←←← YAHAN APNA TOKEN DAAL (sirf ek baar)
+const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';   // ← yahan daal
+const bot = new Telegraf(BOT_TOKEN);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-app.use(express.json());   // ← ye zaroori hai webhook ke liye
+app.use(express.json());
 
-// Health check (Render ko pata chale bot zinda hai)
+// Health check
 app.get('/', (req, res) => res.send('Bot is running ✅'));
 
 // Webhook route
@@ -23,12 +24,12 @@ app.post('/webhook', (req, res) => {
         });
 });
 
-// === TERA PURA BOT LOGIC YAHAN RAKH (koi change nahi karna) ===
-// Jaise ye sab tera facilities wala code:
-bot.start((ctx) => ctx.reply('Salaam bhai'));
-bot.command('help', (ctx) => ctx.reply('Ye tera facilities menu'));
-bot.on('message', (ctx) => { /* tera logic */ });
-// ... jo bhi tune daala tha sab yahan paste rakh
+// ====================== TERA PURA FACILITIES / BOT LOGIC YAHAN RAKH ======================
+// Sab kuch jo tune pehle daala tha (commands, hears, on('message'), middlewares, database etc.)
+// Example:
+// bot.start((ctx) => ctx.reply('Bot live ho gaya bhai'));
+// bot.command('menu', (ctx) => { ... tera facilities menu ... });
+// bot.on('message', (ctx) => { ... tera saara logic ... });
 
 // Server start
 const server = app.listen(PORT, '0.0.0.0', () => {
@@ -37,7 +38,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Port ${PORT} pe live`);
 });
 
-// Webhook auto set (deploy ke baad)
+// Webhook set
 const WEBHOOK_URL = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'tera-service-name.onrender.com'}/webhook`;
 
 bot.telegram.setWebhook(WEBHOOK_URL, { drop_pending_updates: true })
@@ -51,11 +52,9 @@ process.on('SIGTERM', () => {
         console.log('Server closed');
         process.exit(0);
     });
-});
+});});
 const ADMIN_ID = 8217006573; // tera user id (admin)
 const API_KEY = 'CYBER_TEST';
-
-const bot = new Telegraf(BOT_TOKEN);
 
 // Database (simple JSON file - Render pe /tmp ya GitHub + lowdb bhi chalega, abhi simple Map)
 let users = new Map(); // userId -> { usage: 0, credits: 0, referredBy: null, key: null }
