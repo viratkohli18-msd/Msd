@@ -156,4 +156,11 @@ const app = express();
 app.get('/', (req, res) => res.send('Bot running'));
 app.listen(port, () => console.log(`Port ${port} pe live`));
 
-// webhook setup kar lena Render pe (Telegraf docs se)
+// bot.js ke end mein ye rakh (port fix)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Bot running on port ${PORT}`);
+});
+
+// webhook set karne ke liye (deploy ke baad)
+bot.telegram.setWebhook(`https://tera-render-url.onrender.com/webhook`);  // Render URL daal
