@@ -33,7 +33,7 @@ function checkLimit(ctx, user) {
   return true;
 }
 
-// Niche wala Reply Keyboard
+// Niche Reply Keyboard (jaise image mein hai)
 const mainKeyboard = Markup.keyboard([
   ['🔍 Lookup ID', '📱 Number Info'],
   ['🚘 Vehicle Info', '🪪 Aadhar Family'],
@@ -46,50 +46,30 @@ bot.start(ctx => {
   ctx.reply(`Welcome bhai 🔥\nFree 7 uses.\n\n𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`, mainKeyboard);
 });
 
-bot.hears('🔍 Lookup ID', ctx => {
+bot.hears(['🔍 Lookup ID', '📱 Number Info', '🚘 Vehicle Info', '🪪 Aadhar Family', '🔑 Buy Premium Key', '👥 Refer & Earn', '❓ Help'], ctx => {
   const user = getUser(ctx.from.id);
   if (!checkLimit(ctx, user)) return;
-  ctx.reply('Username (without @) ya User ID bhej:');
+
+  const cmd = ctx.message.text;
+  if (cmd === '🔍 Lookup ID') ctx.reply('Username (without @) ya User ID bhej:');
+  else if (cmd === '📱 Number Info') ctx.reply('10 digit number bhej:');
+  else if (cmd === '🚘 Vehicle Info') ctx.reply('Vehicle number bhej:');
+  else if (cmd === '🪪 Aadhar Family') ctx.reply('Aadhar 12 digit bhej:');
+  else if (cmd === '🔑 Buy Premium Key') ctx.reply(`Premium Key ke liye @mrkaran078 ko message kar.\nTera User ID: ${ctx.from.id}`);
+  else if (cmd === '👥 Refer & Earn') {
+    let u = getUser(ctx.from.id);
+    if (!u.premiumKey) u.premiumKey = `PREM\( {ctx.from.id}X \){Date.now().toString().slice(-4)}`;
+    ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
+  }
+  else if (cmd === '❓ Help') ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited\nButton daba ke data bhej.');
 });
 
-bot.hears('📱 Number Info', ctx => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  ctx.reply('10 digit number bhej:');
-});
-
-bot.hears('🚘 Vehicle Info', ctx => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  ctx.reply('Vehicle number bhej:');
-});
-
-bot.hears('🪪 Aadhar Family', ctx => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  ctx.reply('Aadhar 12 digit bhej:');
-});
-
-bot.hears('🔑 Buy Premium Key', ctx => {
-  ctx.reply(`Premium Key ke liye @mrkaran078 ko message kar.\nTera User ID: ${ctx.from.id}`);
-});
-
-bot.hears('👥 Refer & Earn', async ctx => {
-  let u = getUser(ctx.from.id);
-  if (!u.premiumKey) u.premiumKey = `PREM\( {ctx.from.id}X \){Date.now().toString().slice(-4)}`;
-  await ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
-});
-
-bot.hears('❓ Help', ctx => {
-  ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited\nButton daba ke data bhej.');
-});
-
-// Text handler for data
+// Data handler (sirf actual data accept karega)
 bot.on('text', async ctx => {
   const text = ctx.message.text.trim();
   const user = getUser(ctx.from.id);
 
-  // Agar keyboard button nahi hai to data samajh
+  // Keyboard buttons ignore karo
   if (['🔍 Lookup ID','📱 Number Info','🚘 Vehicle Info','🪪 Aadhar Family','🔑 Buy Premium Key','👥 Refer & Earn','❓ Help'].includes(text)) return;
 
   if (!checkLimit(ctx, user)) return;
