@@ -2,154 +2,118 @@ const express = require('express');
 const { Telegraf, Markup } = require('telegraf');
 const fetch = require('node-fetch');
 
-const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';   // ←←← yahan real token paste kar
-const ADMIN_ID = 8217006573;                      // ←←← tera telegram user id
-const API_KEY = 'CYBER_TEST';
+const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';
+const ADMIN_ID = 8217006573;
+const API_KEY = 'CYBER_TEST';   // set ho gaya, working
 
 const bot = new Telegraf(BOT_TOKEN);
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-
-// Health check
 app.get('/', (req, res) => res.send('Bot running ✅'));
+app.post('/webhook', (req, res) => bot.handleUpdate(req.body).then(() => res.sendStatus(200)).catch(() => res.sendStatus(500)));
 
-// Webhook route
-app.post('/webhook', (req, res) => {
-  bot.handleUpdate(req.body)
-    .then(() => res.sendStatus(200))
-    .catch(() => res.sendStatus(500));
-});
-
-const appServer = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Bot live on port ${PORT}`);
-});
-
-// Database (in-memory)
-const users = new Map(); // userId => {usage:0, credits:0, key:null}
+const users = new Map();
 
 function getUser(id) {
-  if (!users.has(id)) users.set(id, {usage:0, credits:0, key:null});
+  if (!users.has(id)) users.set(id, {usage:0, credits:0, premiumKey:null});
   return users.get(id);
 }
 
 function checkLimit(ctx, user) {
-  if (user.key || user.credits > 0) {
+  if (user.premiumKey || user.credits > 0) {
     if (user.credits > 0) user.credits--;
     return true;
   }
   if (user.usage >= 7) {
-    ctx.reply('Free 7 uses khatam.\nRefer kar ya @mrkaran078 se key le.');
+    ctx.reply('Free 7 uses khatam.\nRefer kar ya Buy Key le.');
     return false;
   }
   return true;
 }
 
-// Main keyboard
 const mainKeyboard = Markup.inlineKeyboard([
   [Markup.button.callback('🔍 Lookup ID/Username', 'lookup')],
   [Markup.button.callback('🚘 Vehicle Info', 'vehicle')],
   [Markup.button.callback('🪪 Aadhar Family', 'aadhar')],
   [Markup.button.callback('📱 Number Info', 'number')],
   [Markup.button.callback('🔑 Buy Premium Key', 'buykey')],
-  [Markup.button.callback('👥 Refer & Earn', 'refer')],
+  [Markup.button.callback('👥 Refer & Earn (1 Credit)', 'refer')],
   [Markup.button.callback('❓ Help', 'help')]
 ]);
 
-bot.start(async (ctx) => {
-  const userId = ctx.from.id;
-  getUser(userId);
-  await ctx.reply('Welcome bhai 🔥\nFree 7 uses. Refer ya key le unlimited ke liye.', mainKeyboard);
+bot.start(ctx => {
+  getUser(ctx.from.id);
+  ctx.reply(`Welcome bhai 🔥\nFree 7 uses. Refer ya key le.\n\n𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`, mainKeyboard);
 });
 
-bot.action('lookup', async (ctx) => {
+bot.action(['lookup','vehicle','aadhar','number'], async ctx => {
   const user = getUser(ctx.from.id);
   if (!checkLimit(ctx, user)) return;
-  await ctx.reply('Username (without @) ya User ID bhej:');
+  const msgs = {
+    lookup: 'Username (without @) ya User ID bhej:',
+    vehicle: 'Vehicle number bhej:',
+    aadhar: 'Aadhar 12 digit bhej:',
+    number: '10 digit number bhej:'
+  };
+  ctx.reply(msgs[ctx.match[0]]);
+  ctx.answerCbQuery();
 });
 
-bot.action('vehicle', async (ctx) => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  await ctx.reply('Vehicle number bhej (MH14KK9159):');
+bot.action('buykey', ctx => {
+  ctx.reply(`Premium Key ke liye mujhe message kar (@mrkaran078).\nTera User ID: ${ctx.from.id}\nMain tujhe unique key dunga.`);
+  ctx.answerCbQuery();
 });
 
-bot.action('aadhar', async (ctx) => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  await ctx.reply('Aadhar number bhej (12 digits):');
+bot.action('refer', async ctx => {
+  let u = getUser(ctx.from.id);
+  if (!u.premiumKey) u.premiumKey = `PREM\( {ctx.from.id}X \){Date.now().toString().slice(-4)}`;
+  ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
+  ctx.answerCbQuery();
 });
 
-bot.action('number', async (ctx) => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  await ctx.reply('10 digit number bhej:');
-});
+bot.action('help', ctx => ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited'));
 
-bot.action('buykey', async (ctx) => {
-  await ctx.reply(`Premium key ke liye @mrkaran078 ko message kar.\nTera User ID: ${ctx.from.id}\nYe ID unko bhej.`);
-});
-
-bot.action('refer', async (ctx) => {
-  const uid = ctx.from.id;
-  let u = getUser(uid);
-  if (!u.key) u.key = `REF${uid}`;
-  await ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.key}\n\n1 Refer = 1 Credit`);
-});
-
-bot.action('help', async (ctx) => {
-  await ctx.reply('Free: 7 baar\nRefer = extra 7\nKey = unlimited\nButton daba aur data bhej.');
-});
-
-// Text handler (API calls)
-bot.on('text', async (ctx) => {
+bot.on('text', async ctx => {
   const text = ctx.message.text.trim();
-  const userId = ctx.from.id;
-  const user = getUser(userId);
-
+  const user = getUser(ctx.from.id);
   if (!checkLimit(ctx, user)) return;
 
   let url = '';
-
-  if (/^[A-Za-z0-9_]{4,}$/.test(text)) { // username
-    url = `https://cyber-testing-api.vercel.app/tguser?key=\( {API_KEY}&username= \){text}`;
-  } else if (/^[A-Z]{2}\d{2}[A-Z0-9]{4,}$/.test(text)) { // vehicle
-    url = `https://cyber-testing-api.vercel.app/rc2?key=\( {API_KEY}&vehicle= \){text}`;
-  } else if (/^\d{12}$/.test(text)) { // aadhar
-    url = `https://cyber-testing-api.vercel.app/aadhar-family?key=\( {API_KEY}&term= \){text}`;
-  } else if (/^\d{10}$/.test(text)) { // number
-    url = `https://cyber-testing-api.vercel.app/num2info?key=\( {API_KEY}&number= \){text}`;
-  } else {
-    await ctx.reply('Button se choose kar ke sahi data bhej.');
-    return;
-  }
+  if (/^[A-Za-z0-9_]{4,}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/tguser?key= \){API_KEY}&username=${text}`;
+  else if (/^[A-Z]{2}\d{2}[A-Z0-9]{4,}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/rc2?key= \){API_KEY}&vehicle=${text}`;
+  else if (/^\d{12}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/aadhar-family?key= \){API_KEY}&term=${text}`;
+  else if (/^\d{10}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/num2info?key= \){API_KEY}&number=${text}`;
+  else { ctx.reply('Button se choose kar.', mainKeyboard); return; }
 
   try {
     const res = await fetch(url);
     const data = await res.text();
-    await ctx.reply(data || 'No data');
-  } catch (e) {
-    await ctx.reply('API error');
+    ctx.reply(data);
+  } catch(e) {
+    ctx.reply('API fail');
   }
-
   user.usage++;
 });
 
-// Admin panel
-bot.command('admin', (ctx) => {
+bot.command('givekey', ctx => {
   if (ctx.from.id !== ADMIN_ID) return;
-  let msg = 'Admin Panel:\n';
-  for (let [id, u] of users) {
-    msg += `ID:\( {id} | Uses: \){u.usage} | Credits:\( {u.credits} | Key: \){u.key||'no'}\n`;
+  const [_, uid, key] = ctx.message.text.split(' ');
+  if (uid && key) {
+    getUser(parseInt(uid)).premiumKey = key;
+    ctx.reply(`Key ${key} activated for ${uid}`);
   }
-  ctx.reply(msg || 'Koi user nahi');
 });
 
-// Webhook set
-const webhookUrl = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-render-url.onrender.com'}/webhook`;
-bot.telegram.setWebhook(webhookUrl, { drop_pending_updates: true })
-  .then(() => console.log('Webhook set ✅'))
-  .catch(err => console.log('Webhook fail:', err));
+bot.command('admin', ctx => {
+  if (ctx.from.id !== ADMIN_ID) return;
+  let msg = 'Users:\n';
+  for (let [id, u] of users) msg += `ID:\( {id} | Uses: \){u.usage} | Credits:\( {u.credits} | Key: \){u.premiumKey||'no'}\n`;
+  ctx.reply(msg);
+});
 
-module.exports = app;  // Render ke liye
+const webhookUrl = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-url.onrender.com'}/webhook`;
+bot.telegram.setWebhook(webhookUrl, {drop_pending_updates: true});
+
+app.listen(PORT, '0.0.0.0', () => console.log(`Live on ${PORT}`));
