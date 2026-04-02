@@ -1,8 +1,57 @@
-// bot.js
-const { Telegraf, Markup } = require('telegraf');
-const fetch = require('node-fetch'); // npm i node-fetch
+// === Render + Telegram Webhook ke liye FINAL CLEAN SETUP (2026) ===
+const express = require('express');
+const { Telegraf } = require('telegraf');
 
-const BOT_TOKEN = '8624025132:AAGrav1OrpiWc88dJRj1QgHmTM5CZWgKcNU'; // yahan daal
+// ←←← YAHAN APNA BOT TOKEN DAAL (naya revoke kiya ho toh naya daal)
+const bot = new Telegraf('8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk');
+
+const app = express();
+const PORT = process.env.PORT || 10000;
+
+app.use(express.json());   // ← ye zaroori hai webhook ke liye
+
+// Health check (Render ko pata chale bot zinda hai)
+app.get('/', (req, res) => res.send('Bot is running ✅'));
+
+// Webhook route
+app.post('/webhook', (req, res) => {
+    bot.handleUpdate(req.body)
+        .then(() => res.sendStatus(200))
+        .catch(err => {
+            console.error('Webhook error:', err);
+            res.sendStatus(500);
+        });
+});
+
+// === TERA PURA BOT LOGIC YAHAN RAKH (koi change nahi karna) ===
+// Jaise ye sab tera facilities wala code:
+bot.start((ctx) => ctx.reply('Salaam bhai'));
+bot.command('help', (ctx) => ctx.reply('Ye tera facilities menu'));
+bot.on('message', (ctx) => { /* tera logic */ });
+// ... jo bhi tune daala tha sab yahan paste rakh
+
+// Server start
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log('Menu');
+    console.log('Bot chal raha hai...');
+    console.log(`Port ${PORT} pe live`);
+});
+
+// Webhook auto set (deploy ke baad)
+const WEBHOOK_URL = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'tera-service-name.onrender.com'}/webhook`;
+
+bot.telegram.setWebhook(WEBHOOK_URL, { drop_pending_updates: true })
+    .then(() => console.log(`✅ Webhook set ho gaya → ${WEBHOOK_URL}`))
+    .catch(err => console.error('Webhook set failed:', err));
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
 const ADMIN_ID = 8217006573; // tera user id (admin)
 const API_KEY = 'CYBER_TEST';
 
@@ -148,39 +197,3 @@ bot.command('admin', async (ctx) => {
 
 bot.launch();
 console.log('Bot chal raha hai...');
-
-// === Render + Telegram Webhook ke liye Clean Setup ===
-const express = require('express');
-const app = express();
-
-const PORT = process.env.PORT || 10000;   // Render default 10000 hota hai, isliye better
-
-// Health check (Render ko pata chale ki app live hai)
-app.get('/', (req, res) => res.send('Bot is running ✅'));
-
-// Telegram webhook route (agar tera bot webhook use karta hai toh yahan handle kar)
-app.post('/webhook', (req, res) => {
-    // yahan tera bot.handleUpdate(req.body) ya jo bhi logic hai wo daal
-    bot.handleUpdate(req.body)
-        .then(() => res.sendStatus(200))
-        .catch(err => {
-            console.error(err);
-            res.sendStatus(500);
-        });
-});
-
-// Server start with proper binding
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Menu`);
-    console.log(`Bot chal raha hai...`);
-    console.log(`Port ${PORT} pe live`);
-});
-
-// Graceful shutdown (Render ke liye zaroori)
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully...');
-    server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
-    });
-});
