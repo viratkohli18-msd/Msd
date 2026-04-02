@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';
 const ADMIN_ID = 8217006573;
-const API_KEY = 'CYBER_TEST';   // set ho gaya, working
+const API_KEY = 'CYBER_TEST';
 
 const bot = new Telegraf(BOT_TOKEN);
 const app = express();
@@ -33,51 +33,65 @@ function checkLimit(ctx, user) {
   return true;
 }
 
-const mainKeyboard = Markup.inlineKeyboard([
-  [Markup.button.callback('🔍 Lookup ID/Username', 'lookup')],
-  [Markup.button.callback('🚘 Vehicle Info', 'vehicle')],
-  [Markup.button.callback('🪪 Aadhar Family', 'aadhar')],
-  [Markup.button.callback('📱 Number Info', 'number')],
-  [Markup.button.callback('🔑 Buy Premium Key', 'buykey')],
-  [Markup.button.callback('👥 Refer & Earn (1 Credit)', 'refer')],
-  [Markup.button.callback('❓ Help', 'help')]
-]);
+// Niche wala Reply Keyboard
+const mainKeyboard = Markup.keyboard([
+  ['🔍 Lookup ID', '📱 Number Info'],
+  ['🚘 Vehicle Info', '🪪 Aadhar Family'],
+  ['🔑 Buy Premium Key', '👥 Refer & Earn'],
+  ['❓ Help']
+]).resize(true).persistent(true);
 
 bot.start(ctx => {
   getUser(ctx.from.id);
-  ctx.reply(`Welcome bhai 🔥\nFree 7 uses. Refer ya key le.\n\n𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`, mainKeyboard);
+  ctx.reply(`Welcome bhai 🔥\nFree 7 uses.\n\n𝑺𝒌 ꭗ 𓆩𝐌.𝐒.𝐃𓆪 & ☠︎𝙑𝙞𝙧𝙖𝙩𓆪 𓆩𖤍𓆪`, mainKeyboard);
 });
 
-bot.action(['lookup','vehicle','aadhar','number'], async ctx => {
+bot.hears('🔍 Lookup ID', ctx => {
   const user = getUser(ctx.from.id);
   if (!checkLimit(ctx, user)) return;
-  const msgs = {
-    lookup: 'Username (without @) ya User ID bhej:',
-    vehicle: 'Vehicle number bhej:',
-    aadhar: 'Aadhar 12 digit bhej:',
-    number: '10 digit number bhej:'
-  };
-  ctx.reply(msgs[ctx.match[0]]);
-  ctx.answerCbQuery();
+  ctx.reply('Username (without @) ya User ID bhej:');
 });
 
-bot.action('buykey', ctx => {
-  ctx.reply(`Premium Key ke liye mujhe message kar (@mrkaran078).\nTera User ID: ${ctx.from.id}\nMain tujhe unique key dunga.`);
-  ctx.answerCbQuery();
+bot.hears('📱 Number Info', ctx => {
+  const user = getUser(ctx.from.id);
+  if (!checkLimit(ctx, user)) return;
+  ctx.reply('10 digit number bhej:');
 });
 
-bot.action('refer', async ctx => {
+bot.hears('🚘 Vehicle Info', ctx => {
+  const user = getUser(ctx.from.id);
+  if (!checkLimit(ctx, user)) return;
+  ctx.reply('Vehicle number bhej:');
+});
+
+bot.hears('🪪 Aadhar Family', ctx => {
+  const user = getUser(ctx.from.id);
+  if (!checkLimit(ctx, user)) return;
+  ctx.reply('Aadhar 12 digit bhej:');
+});
+
+bot.hears('🔑 Buy Premium Key', ctx => {
+  ctx.reply(`Premium Key ke liye @mrkaran078 ko message kar.\nTera User ID: ${ctx.from.id}`);
+});
+
+bot.hears('👥 Refer & Earn', async ctx => {
   let u = getUser(ctx.from.id);
   if (!u.premiumKey) u.premiumKey = `PREM\( {ctx.from.id}X \){Date.now().toString().slice(-4)}`;
-  ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
-  ctx.answerCbQuery();
+  await ctx.reply(`Refer link:\nhttps://t.me/\( {ctx.botInfo.username}?start= \){u.premiumKey}\n1 Refer = 1 Credit`);
 });
 
-bot.action('help', ctx => ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited'));
+bot.hears('❓ Help', ctx => {
+  ctx.reply('Free 7 uses\nRefer = +1 credit\nBuy Key = unlimited\nButton daba ke data bhej.');
+});
 
+// Text handler for data
 bot.on('text', async ctx => {
   const text = ctx.message.text.trim();
   const user = getUser(ctx.from.id);
+
+  // Agar keyboard button nahi hai to data samajh
+  if (['🔍 Lookup ID','📱 Number Info','🚘 Vehicle Info','🪪 Aadhar Family','🔑 Buy Premium Key','👥 Refer & Earn','❓ Help'].includes(text)) return;
+
   if (!checkLimit(ctx, user)) return;
 
   let url = '';
@@ -85,24 +99,27 @@ bot.on('text', async ctx => {
   else if (/^[A-Z]{2}\d{2}[A-Z0-9]{4,}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/rc2?key= \){API_KEY}&vehicle=${text}`;
   else if (/^\d{12}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/aadhar-family?key= \){API_KEY}&term=${text}`;
   else if (/^\d{10}\( /.test(text)) url = `https://cyber-testing-api.vercel.app/num2info?key= \){API_KEY}&number=${text}`;
-  else { ctx.reply('Button se choose kar.', mainKeyboard); return; }
+  else {
+    ctx.reply('Button se choose kar aur sahi data bhej.', mainKeyboard);
+    return;
+  }
 
   try {
     const res = await fetch(url);
     const data = await res.text();
-    ctx.reply(data);
+    await ctx.reply(data);
   } catch(e) {
-    ctx.reply('API fail');
+    await ctx.reply('API fail');
   }
   user.usage++;
 });
 
 bot.command('givekey', ctx => {
   if (ctx.from.id !== ADMIN_ID) return;
-  const [_, uid, key] = ctx.message.text.split(' ');
-  if (uid && key) {
-    getUser(parseInt(uid)).premiumKey = key;
-    ctx.reply(`Key ${key} activated for ${uid}`);
+  const args = ctx.message.text.split(' ');
+  if (args[1] && args[2]) {
+    getUser(parseInt(args[1])).premiumKey = args[2];
+    ctx.reply(`Key ${args[2]} activated for ${args[1]}`);
   }
 });
 
