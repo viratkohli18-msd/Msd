@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const BOT_TOKEN = '8624025132:AAEcNyPgKEPW8ChF7PRrvM2VBD8LXvISxlk';
 const ADMIN_ID = 8217006573;
-const API_KEY = 'CYBER_TEST';
+const API_KEY = 'CYBER_TEST';   // tg2num abhi working hai
 
 const bot = new Telegraf(BOT_TOKEN);
 const app = express();
@@ -24,22 +24,22 @@ function getUser(id) {
 function checkLimit(ctx, user) {
   if (user.premium) return true;
   if (user.usage >= 7) {
-    ctx.reply('❌ LIMIT REACHED\n7 free lookups khatam.\nBuy Premium Key from @mrkaran078');
+    ctx.reply('❌ 7 FREE LOOKUPS KHATAM\nBuy Premium Key from @mrkaran078');
     return false;
   }
   return true;
 }
 
 const mainKeyboard = Markup.keyboard([
-  ['🔍 LOOKUP USERNAME'],
+  ['🔍 TG ID TO NUMBER'],
   ['🔑 BUY PREMIUM KEY'],
   ['❓ HELP']
 ]).resize(true).persistent(true);
 
 bot.start(ctx => {
   getUser(ctx.from.id);
-  ctx.reply(`🩸 <b>USERNAME TO NUMBER v2.0</b>\n\n` +
-            `🔥 Dangerous Lookup System\n` +
+  ctx.reply(`🩸 <b>TG ID TO NUMBER v2.0</b>\n\n` +
+            `🔥 Dangerous Real Number Extractor\n` +
             `🇮🇳 India | 🌍 Global\n\n` +
             `Free: 7 lookups\n` +
             `After that → Premium only\n\n` +
@@ -47,51 +47,53 @@ bot.start(ctx => {
             { parse_mode: 'HTML', reply_markup: mainKeyboard.reply_markup });
 });
 
-bot.hears('🔍 LOOKUP USERNAME', ctx => {
-  const user = getUser(ctx.from.id);
-  if (!checkLimit(ctx, user)) return;
-  ctx.reply('Send username (without @) or User ID:');
+bot.hears('🔍 TG ID TO NUMBER', ctx => {
+  if (!checkLimit(ctx, getUser(ctx.from.id))) return;
+  ctx.reply('TG Chat ID (number) bhej:');
 });
 
 bot.hears('🔑 BUY PREMIUM KEY', ctx => {
-  ctx.reply(`🔑 Premium Key kharidne ke liye @mrkaran078 ko message kar.\n\nTera User ID: <code>${ctx.from.id}</code>\nYe ID copy-paste kar ke bhej dena.`, { parse_mode: 'HTML' });
+  ctx.reply(`🔑 Premium Key ke liye @mrkaran078 ko message kar.\n\nTera User ID: <code>${ctx.from.id}</code>`, { parse_mode: 'HTML' });
 });
 
 bot.hears('❓ HELP', ctx => {
-  ctx.reply('7 free lookups allowed.\nAfter that buy premium key.\nOnly username lookup available.');
+  ctx.reply('TG ID bhej → Real number + country code milega.\nFree 7 baar.');
 });
 
+// Real handler
 bot.on('text', async ctx => {
   const text = ctx.message.text.trim();
   const user = getUser(ctx.from.id);
 
-  if (['🔍 LOOKUP USERNAME','🔑 BUY PREMIUM KEY','❓ HELP'].includes(text)) return;
+  if (['🔍 TG ID TO NUMBER','🔑 BUY PREMIUM KEY','❓ HELP'].includes(text)) return;
 
-  if (!checkLimit(ctx, user)) return;
-
-  if (!/^[A-Za-z0-9_]{4,}$/.test(text)) {
-    ctx.reply('Invalid format. Button se LOOKUP USERNAME daba ke username bhej.', mainKeyboard);
+  if (!/^\d{8,15}$/.test(text)) {
+    ctx.reply('Sirf TG Chat ID (number) bhej.\nExample: 6686353085', mainKeyboard);
     return;
   }
 
+  if (!checkLimit(ctx, user)) return;
+
   try {
-    const res = await fetch(`https://cyber-testing-api.vercel.app/tguser?key=\( {API_KEY}&username= \){text}`);
+    const res = await fetch(`https://cyber-testing-api.vercel.app/tg2num?key=\( {API_KEY}&number= \){text}`);
     const data = await res.text();
     await ctx.reply(`🩸 RESULT:\n\n${data}`);
   } catch(e) {
-    await ctx.reply('API ERROR');
+    await ctx.reply('API fail');
   }
 
   user.usage++;
 });
 
+// FIXED /givekey — ab auto key generate + activate
 bot.command('givekey', ctx => {
   if (ctx.from.id !== ADMIN_ID) return;
-  const args = ctx.message.text.split(' ');
-  if (args[1]) {
-    getUser(parseInt(args[1])).premium = true;
-    ctx.reply(`✅ Premium activated for ${args[1]}`);
-  }
+  const uid = parseInt(ctx.message.text.split(' ')[1]);
+  if (!uid) return ctx.reply('Usage: /givekey 8217006573');
+
+  const newKey = `PREM\( {uid}X \){Date.now().toString().slice(-6)}`;
+  getUser(uid).premium = true;
+  ctx.reply(`✅ Premium Activated!\nUser: ${uid}\nKey: ${newKey}`);
 });
 
 bot.command('admin', ctx => {
@@ -100,7 +102,7 @@ bot.command('admin', ctx => {
   for (let [id, u] of users) {
     msg += `ID: ${id} | Uses: ${u.usage} | Premium: ${u.premium ? '✅' : '❌'}\n`;
   }
-  ctx.reply(msg || 'No users yet');
+  ctx.reply(msg || 'No users');
 });
 
 const webhookUrl = `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-url.onrender.com'}/webhook`;
